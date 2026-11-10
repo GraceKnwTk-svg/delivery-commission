@@ -3,172 +3,185 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบคำนวณค่าคอมมิชชันแบบละเอียด</title>
-    <!-- เรียกใช้งาน Tailwind CSS เพื่อจัดหน้าต่างแอปให้สวยงามรองรับมือถือ -->
+    <title>ระบบคำนวณค่าคอมมิชชัน SPX ขนส่ง</title>
     <script src="https://tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
 
-    <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md my-4">
-        <h1 class="text-2xl font-bold text-center text-orange-600 mb-6">📊 คำนวณค่าคอมแบบแจกแจงละเอียด</h1>
+    <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-lg my-4">
+        <h1 class="text-2xl font-bold text-center text-orange-600 mb-6">📊 โปรแกรมคำนวณค่ากล่องรายวัน SPX</h1>
         
         <!-- ส่วนที่ 1: เลือกประเภทงาน -->
         <div class="mb-4">
             <label class="block text-gray-700 text-sm font-bold mb-2">ประเภทพนักงาน / โซน</label>
-            <select id="empType" class="w-full p-3 border rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-500" onchange="toggleSizeSelect()">
-                <option value="z9_pickup">โซน Z9 : พนักงานรถกระบะ</option>
-                <option value="z9_own_fleet">โซน Z9 : พนักงานรถกระบะ Own-fleet</option>
-                <option value="z9_motorcycle">โซน Z9 : พนักงานมอเตอร์ไซค์</option>
-                <option value="z6_shipper">โซน Z6 : พนักงาน 2WL Shipper</option>
+            <select id="empType" class="w-full p-3 border rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-500" onchange="toggleInputs()">
+                <option value="z9_pickup">โซน Z9 : พนักงานรถกระบะ (4W)</option>
+                <option value="z9_own_fleet">โซน Z9 : พนักงานรถกระบะ Own-fleet (4W)</option>
+                <option value="z9_motorcycle">โซน Z9 : พนักงานมอเตอร์ไซค์ (2W)</option>
+                <option value="z6_shipper">โซน Z6 : พนักงาน 2WL Shipper (2W)</option>
             </select>
         </div>
 
-        <!-- ส่วนที่ 2: เลือกขนาดพัสดุ (จะซ่อนอัตโนมัติถ้าเลือกมอเตอร์ไซค์) -->
-        <div class="mb-4" id="sizeContainer">
-            <label class="block text-gray-700 text-sm font-bold mb-2">ขนาดพัสดุ</label>
-            <select id="packageSize" class="w-full p-3 border rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                <option value="S">พัสดุขนาดเล็ก (SIZE S)</option>
-                <option value="L">พัสดุขนาดทั่วไป (SIZE L)</option>
-            </select>
+        <!-- ส่วนที่ 2: กรอกจำนวนพัสดุแยกไซส์ -->
+        <div class="grid grid-cols-2 gap-4 mb-4">
+            <div>
+                <label class="block text-gray-700 text-sm font-bold mb-2">จำนวนพัสดุเล็ก (Size S)</label>
+                <input type="number" id="sizeSCount" min="0" value="0" class="w-full p-3 border rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-500">
+            </div>
+            <div id="sizeLContainer">
+                <label class="block text-gray-700 text-sm font-bold mb-2">จำนวนพัสดุทั่วไป (Size L)</label>
+                <input type="number" id="sizeLCount" min="0" value="0" class="w-full p-3 border rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-500">
+            </div>
         </div>
 
-        <!-- ส่วนที่ 3: กรอกจำนวนพัสดุ -->
-        <div class="mb-6">
-            <label class="block text-gray-700 text-sm font-bold mb-2">จำนวนพัสดุที่ส่งสำเร็จ (ต่อวัน)</label>
-            <input type="number" id="parcels" min="0" placeholder="ระบุจำนวนชิ้น เช่น 120" class="w-full p-3 border rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-500">
+        <!-- ส่วนที่ 3: กรอกจำนวนพัสดุหักลบงานซ้ำ Same Address -->
+        <div class="mb-6 p-4 bg-red-50 rounded-xl border border-red-100">
+            <h3 class="font-bold text-red-700 text-sm mb-2">🏠 กรณีส่งพัสดุหลายชิ้นในที่อยู่เดียวกัน (Same Address)</h3>
+            <p class="text-xs text-red-500 mb-3">* หักชิ้นที่ 2 เป็นต้นไปในบ้านหลังนั้น เช่น ส่งบ้านเดียวกัน 3 ชิ้น ให้กรอกจำนวนหักลบ = 2 ชิ้น</p>
+            <div>
+                <label class="block text-gray-600 text-xs font-bold mb-1">รวมจำนวนชิ้นที่จะโดนหักลบ (ทุกที่อยู่รวมกัน)</label>
+                <input type="number" id="sameAddressDeduct" min="0" value="0" placeholder="กรอกจำนวนชิ้นรวมที่จะโดนหัก เช่น 26" class="w-full p-3 border rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-red-400">
+            </div>
         </div>
 
         <!-- ปุ่มคำนวณ -->
-        <button onclick="calculateCommission()" class="w-full bg-orange-500 text-white font-bold p-3 rounded-xl hover:bg-orange-600 transition shadow-md">
-            คำนวณและแสดงวิธีคิด
+        <button onclick="processCalculation()" class="w-full bg-orange-500 text-white font-bold p-3 rounded-xl hover:bg-orange-600 transition shadow-md">
+            คำนวณและแจกแจงวิธีคิด
         </button>
 
-        <!-- ส่วนที่ 4: แสดงกล่องผลลัพธ์การคำนวณ -->
+        <!-- ส่วนที่ 4: ส่วนแสดงผลลัพธ์และวิธีคิดเงิน -->
         <div class="mt-6 hidden" id="resultContainer">
-            <div class="p-4 bg-orange-50 rounded-xl border border-orange-200 text-center mb-4">
-                <p class="text-gray-600 text-sm font-medium">💰 รวมเงินที่จะได้รับทั้งหมด</p>
-                <p class="text-3xl font-extrabold text-orange-600 mt-1"><span id="totalEarnings">0</span> บาท</p>
+            <div class="grid grid-cols-3 gap-2 text-center text-xs mb-4">
+                <div class="p-3 bg-blue-50 rounded-xl border border-blue-200">
+                    <p class="text-gray-500 font-medium">ค่ากล่องสะสม (A)</p>
+                    <p class="text-lg font-bold text-blue-600 mt-1"><span id="grossIncome">0</span> บ.</p>
+                </div>
+                <div class="p-3 bg-red-50 rounded-xl border border-red-200">
+                    <p class="text-gray-500 font-medium">หักงานซ้ำ (B)</p>
+                    <p class="text-lg font-bold text-red-600 mt-1"><span id="deductAmount">0</span> บ.</p>
+                </div>
+                <div class="p-3 bg-green-50 rounded-xl border border-green-200">
+                    <p class="text-gray-500 font-medium">สุทธิที่ได้รับ (A-B)</p>
+                    <p class="text-xl font-extrabold text-green-600 mt-1"><span id="netIncome">0</span> บ.</p>
+                </div>
             </div>
             
             <div class="p-4 bg-gray-50 rounded-xl border border-gray-200">
-                <h3 class="font-bold text-gray-700 text-sm mb-3">📄 รายละเอียดและวิธีคิดเงิน</h3>
-                <div id="breakdownList" class="space-y-4 text-sm text-gray-600">
-                    <!-- วิธีคิดแจกแจงสะสมจะมาโผล่ตรงนี้ -->
+                <h3 class="font-bold text-gray-700 text-sm mb-3">📄 ตารางแจกแจงการนับพัสดุตามลำดับ (เริ่มจาก Size S ก่อน)</h3>
+                <div id="breakdownList" class="space-y-4 text-xs text-gray-600 overflow-x-auto">
+                    <!-- แสดงตารางคำนวณสะสม -->
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ส่วนที่ 5: ระบบตรรกะการคำนวณขั้นบันได (JavaScript) -->
+    <!-- ส่วนที่ 5: ระบบคำนวณ -->
     <script>
-        function toggleSizeSelect() {
+        function toggleInputs() {
             const empType = document.getElementById('empType').value;
-            const sizeContainer = document.getElementById('sizeContainer');
+            const sizeLContainer = document.getElementById('sizeLContainer');
             if (empType === 'z9_motorcycle') {
-                sizeContainer.classList.add('hidden');
+                sizeLContainer.classList.add('hidden');
+                document.getElementById('sizeLCount').value = 0;
             } else {
-                sizeContainer.classList.remove('hidden');
+                sizeLContainer.classList.remove('hidden');
             }
         }
 
-        function calculateCommission() {
+        function processCalculation() {
             const empType = document.getElementById('empType').value;
-            const size = document.getElementById('packageSize').value;
-            const parcels = parseInt(document.getElementById('parcels').value) || 0;
-            
-            let tiers = [];
+            const sCount = parseInt(document.getElementById('sizeSCount').value) || 0;
+            const lCount = parseInt(document.getElementById('sizeLCount').value) || 0;
+            const deductCount = parseInt(document.getElementById('sameAddressDeduct').value) || 0;
 
-            // อ้างอิงช่วงเรทราคาขั้นบันได [เริ่มชิ้นที่, สิ้นสุดชิ้นที่, ราคาต่อชิ้น] ตามภาพตารางต้นฉบับ 100%
+            let tiers = [];
+            let vehicleType = '4W';
+
             if (empType === 'z9_pickup') {
-                if (size === 'L') {
-                    tiers = [
-                        { start: 0, end: 44, rate: 0 },
-                        { start: 44, end: 99, rate: 12 },
-                        { start: 99, end: 169, rate: 13 },
-                        { start: 169, end: 209, rate: 10.5 },
-                        { start: 209, end: Infinity, rate: 9.5 }
-                    ];
-                } else {
-                    tiers = [
-                        { start: 0, end: 44, rate: 0 },
-                        { start: 44, end: 99, rate: 7 },
-                        { start: 99, end: 169, rate: 8 },
-                        { start: 169, end: 209, rate: 6.5 },
-                        { start: 209, end: Infinity, rate: 5.5 }
-                    ];
-                }
-            } else if (empType === 'z9_own_fleet') {
-                if (size === 'L') {
-                    tiers = [
-                        { start: 0, end: 44, rate: 0 },
-                        { start: 44, end: 69, rate: 7 },
-                        { start: 69, end: 114, rate: 8 },
-                        { start: 114, end: Infinity, rate: 9 }
-                    ];
-                } else {
-                    tiers = [
-                        { start: 0, end: 44, rate: 0 },
-                        { start: 44, end: 69, rate: 4 },
-                        { start: 69, end: 114, rate: 5 },
-                        { start: 114, end: Infinity, rate: 5 }
-                    ];
-                }
-            } else if (empType === 'z9_motorcycle') {
+                vehicleType = '4W';
                 tiers = [
-                    { start: 0, end: 69, rate: 0 },
-                    { start: 69, end: 89, rate: 6 },
-                    { start: 89, end: 179, rate: 7 },
-                    { start: 179, end: 209, rate: 8 },
-                    { start: 209, end: 249, rate: 6.5 },
-                    { start: 249, end: Infinity, rate: 5.5 }
+                    { start: 0, end: 44, rateL: 0, rateS: 0 },
+                    { start: 44, end: 99, rateL: 12, rateS: 7 },
+                    { start: 99, end: 169, rateL: 13, rateS: 8 },
+                    { start: 169, end: 209, rateL: 10.5, rateS: 6.5 },
+                    { start: 209, end: Infinity, rateL: 9.5, rateS: 5.5 }
+                ];
+            } else if (empType === 'z9_own_fleet') {
+                vehicleType = '4W';
+                tiers = [
+                    { start: 0, end: 44, rateL: 0, rateS: 0 },
+                    { start: 44, end: 69, rateL: 7, rateS: 4 },
+                    { start: 69, end: 114, rateL: 8, rateS: 5 },
+                    { start: 114, end: Infinity, rateL: 9, rateS: 5 }
+                ];
+            } else if (empType === 'z9_motorcycle') {
+                vehicleType = '2W';
+                tiers = [
+                    { start: 0, end: 69, rateL: 0, rateS: 0 },
+                    { start: 69, end: 89, rateL: 6, rateS: 6 },
+                    { start: 89, end: 179, rateL: 7, rateS: 7 },
+                    { start: 179, end: 209, rateL: 8, rateS: 8 },
+                    { start: 209, end: 249, rateL: 6.5, rateS: 6.5 },
+                    { start: 249, end: Infinity, rateL: 5.5, rateS: 5.5 }
                 ];
             } else if (empType === 'z6_shipper') {
-                if (size === 'L') {
-                    tiers = [
-                        { start: 0, end: 34, rate: 0 },
-                        { start: 34, end: 74, rate: 10 },
-                        { start: 74, end: 114, rate: 12 },
-                        { start: 114, end: Infinity, rate: 13 }
-                    ];
-                } else {
-                    tiers = [
-                        { start: 0, end: 34, rate: 0 },
-                        { start: 34, end: 74, rate: 6 },
-                        { start: 74, end: 114, rate: 7 },
-                        { start: 114, end: Infinity, rate: 8 }
-                    ];
-                }
+                vehicleType = '2W';
+                tiers = [
+                    { start: 0, end: 34, rateL: 10, rateS: 6 },
+                    { start: 34, end: 74, rateL: 12, rateS: 7 },
+                    { start: 74, end: 114, rateL: 13, rateS: 8 },
+                    { start: 114, end: Infinity, rateL: 13, rateS: 8 }
+                ];
             }
 
-            let total = 0;
-            let piecesHtml = '<p class="font-semibold text-gray-700">1. แยกพัสดุออกเป็นแต่ละขั้น (ตามลำดับ)</p><ul class="list-disc pl-5 space-y-1 text-gray-600 mt-1">';
-            let moneyHtml = '<p class="font-semibold text-gray-700 mt-3">2. คำนวณเงินของแต่ละขั้นแล้วนำมารวมกัน</p><ul class="list-disc pl-5 space-y-1 text-gray-600 mt-1">';
+            let deductRate = vehicleType === '4W' ? 2.5 : 1.5;
+            let totalDeduction = deductCount * deductRate;
+
+            let remainingS = sCount;
+            let remainingL = lCount;
+            let grossTotal = 0;
+            let globalIndex = 0;
+
+            let tableRowsHtml = '';
 
             for (let i = 0; i < tiers.length; i++) {
                 let tier = tiers[i];
-                if (parcels > tier.start) {
-                    let currentTierParcels = Math.min(parcels, tier.end) - tier.start;
-                    let tierSum = currentTierParcels * tier.rate;
-                    total += tierSum;
 
-                    let rangeLabel = tier.end === Infinity 
-                        ? `ชิ้นที่ ${tier.start + 1} เป็นต้นไป` 
-                        : `ชิ้นที่ ${tier.start === 0 ? 0 : tier.start + 1} - ${tier.end}`;
-
-                    piecesHtml += `<li>ขั้นที่ ${i + 1} (${rangeLabel}): มีโควตาช่วงนี้ <span class="text-orange-600 font-bold">${currentTierParcels} ชิ้น</span> (ได้ชิ้นละ ${tier.rate} บาท)</li>`;
-                    moneyHtml += `<li>ขั้นที่ ${i + 1}: ${currentTierParcels} ชิ้น × ${tier.rate} บาท = ${tierSum.toLocaleString('th-TH')} บาท</li>`;
-                } else {
-                    break;
+                if (remainingS > 0 && globalIndex < tier.end) {
+                    let availableSpace = tier.end - globalIndex;
+                    let sToProcess = Math.min(remainingS, availableSpace);
+                    let money = sToProcess * tier.rateS;
+                    grossTotal += money;
+                    
+                    let rangeText = `ชิ้นที่ ${globalIndex + 1} - ${globalIndex + sToProcess}`;
+                    tableRowsHtml += `<tr class="border-b"><td class="p-2">${rangeText}</td><td class="p-2 text-center text-orange-600 font-medium">S</td><td class="p-2 text-center">${tier.rateS}</td><td class="p-2 text-center">${sToProcess}</td><td class="p-2 text-right font-bold">${money}</td></tr>`;
+                    
+                    remainingS -= sToProcess;
+                    globalIndex += sToProcess;
                 }
+
+                if (remainingL > 0 && globalIndex < tier.end) {
+                    let availableSpace = tier.end - globalIndex;
+                    let lToProcess = Math.min(remainingL, availableSpace);
+                    let money = lToProcess * tier.rateL;
+                    grossTotal += money;
+
+                    let rangeText = `ชิ้นที่ ${globalIndex + 1} - ${globalIndex + lToProcess}`;
+                    tableRowsHtml += `<tr class="border-b"><td class="p-2">${rangeText}</td><td class="p-2 text-center text-blue-600 font-medium">L</td><td class="p-2 text-center">${tier.rateL}</td><td class="p-2 text-center">${lToProcess}</td><td class="p-2 text-right font-bold">${money}</td></tr>`;
+
+                    remainingL -= lToProcess;
+                    globalIndex += lToProcess;
+                }
+                
+                if (remainingS === 0 && remainingL === 0) break;
             }
 
-            piecesHtml += `</ul><p class="text-xs text-gray-400 mt-1">(รวมจำนวนพัสดุทุกขั้น: ${parcels} ชิ้น ครบพอดี)</p>`;
-            moneyHtml += `</ul><p class="font-bold text-gray-700 mt-3 text-right border-t pt-2">💰 รวมเงินทั้งหมด: <span class="text-orange-600 text-lg">${total.toLocaleString('th-TH')}</span> บาท</p>`;
+            let netTotal = Math.max(0, grossTotal - totalDeduction);
 
-            document.getElementById('totalEarnings').innerText = total.toLocaleString('th-TH');
-            document.getElementById('breakdownList').innerHTML = piecesHtml + moneyHtml;
-            document.getElementById('resultContainer').classList.remove('hidden');
-        }
-    </script>
-</body>
-</html>
+            let finalTableHtml = `
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-100 text-gray-700 font-bold border-b">
+                            <th class="p-2">ช่วงพัสดุสำเร็จ</th>
+                            <th class="p-2 text-center">ขนาด</th>
+                            <th class="p-2 text-center">เรท</th>
