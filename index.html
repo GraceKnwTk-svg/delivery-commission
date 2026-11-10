@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบคำนวณค่าคอมมิชชันขนส่ง</title>
+    <script src="https://tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+
+    <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md">
+        <h1 class="text-2xl font-bold text-center text-orange-600 mb-6">📊 คำนวณค่าคอมมิชชัน</h1>
+        
+        <!-- เลือกประเภทงาน -->
+        <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2">ประเภทพนักงาน / โซน</label>
+            <select id="empType" class="w-full p-3 border rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-500" onchange="toggleSizeSelect()">
+                <option value="z9_pickup">โซน Z9 : พนักงานรถกระบะ</option>
+                <option value="z9_own_fleet">โซน Z9 : พนักงานรถกระบะ Own-fleet</option>
+                <option value="z9_motorcycle">โซน Z9 : พนักงานมอเตอร์ไซค์</option>
+                <option value="z6_shipper">โซน Z6 : พนักงาน 2WL Shipper</option>
+            </select>
+        </div>
+
+        <!-- เลือกไซส์พัสดุ -->
+        <div class="mb-4" id="sizeContainer">
+            <label class="block text-gray-700 text-sm font-bold mb-2">ขนาดพัสดุ</label>
+            <select id="packageSize" class="w-full p-3 border rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                <option value="S">พัสดุขนาดเล็ก (SIZE S)</option>
+                <option value="L">พัสดุขนาดทั่วไป (SIZE L)</option>
+            </select>
+        </div>
+
+        <!-- กรอกจำนวนชิ้น -->
+        <div class="mb-6">
+            <label class="block text-gray-700 text-sm font-bold mb-2">จำนวนพัสดุที่ส่งสำเร็จ (ต่อวัน)</label>
+            <input type="number" id="parcels" min="0" placeholder="ระบุจำนวนชิ้น เช่น 120" class="w-full p-3 border rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-500">
+        </div>
+
+        <!-- ปุ่มคำนวณ -->
+        <button onclick="calculateCommission()" class="w-full bg-orange-500 text-white font-bold p-3 rounded-xl hover:bg-orange-600 transition shadow-md">
+            คำนวณเงินรางวัล
+        </button>
+
+        <!-- แสดงผลลัพธ์ -->
+        <div class="mt-6 p-4 bg-orange-50 rounded-xl border border-orange-200 text-center hidden" id="resultContainer">
+            <p class="text-gray-600 text-sm font-medium">ค่าคอมมิชชันรวมโดยประมาณ</p>
+            <p class="text-3xl font-extrabold text-orange-600 mt-1"><span id="totalEarnings">0</span> บาท</p>
+        </div>
+    </div>
+
+    <script>
+        function toggleSizeSelect() {
+            const empType = document.getElementById('empType').value;
+            const sizeContainer = document.getElementById('sizeContainer');
+            if (empType === 'z9_motorcycle') {
+                sizeContainer.classList.add('hidden');
+            } else {
+                sizeContainer.classList.remove('hidden');
+            }
+        }
+
+        function calculateTier(parcels, rates) {
+            let total = 0;
+            let prev = 0;
+            for (let i = 0; i < rates.length; i++) {
+                let limit = rates[i][0];
+                let rate = rates[i][1];
+                if (parcels > prev) {
+                    let currentTierParcels = Math.min(parcels, limit) - prev;
+                    total += currentTierParcels * rate;
+                    prev = limit;
+                } else {
+                    break;
+                }
+            }
+            return total;
+        }
+
+        document.getElementById('empType').addEventListener('change', toggleSizeSelect);
+
+        function calculateCommission() {
+            const empType = document.getElementById('empType').value;
+            const size = document.getElementById('packageSize').value;
+            const parcels = parseInt(document.getElementById('parcels').value) || 0;
+            let total = 0;
+
+            if (empType === 'z9_pickup') {
+                const rates = size === 'L' 
+                    ? [[44, 0], [99, 12], [169, 13], [209, 10.5], [Infinity, 9.5]]
+                    : [[44, 0], [99, 7], [169, 8], [209, 6.5], [Infinity, 5.5]];
+                total = calculateTier(parcels, rates);
+            } else if (empType === 'z9_own_fleet') {
+                const rates = size === 'L'
+                    ? [[44, 0], [69, 7], [114, 8], [Infinity, 9]]
+                    : [[44, 0], [69, 4], [114, 5], [Infinity, 5]];
+                total = calculateTier(parcels, rates);
+            } else if (empType === 'z9_motorcycle') {
+                const rates = [[69, 0], [89, 6], [179, 7], [209, 8], [249, 6.5], [Infinity, 5.5]];
+                total = calculateTier(parcels, rates);
+            } else if (empType === 'z6_shipper') {
+                const rates = size === 'L'
+                    ? [[34, 0], [74, 10], [114, 12], [Infinity, 13]]
+                    : [[34, 0], [74, 6], [114, 7], [Infinity, 8]];
+                total = calculateTier(parcels, rates);
+            }
+
+            document.getElementById('totalEarnings').innerText = total.toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+            document.getElementById('resultContainer').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
