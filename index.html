@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบคำนวณค่าคอมมิชชันขนส่ง</title>
+    <title>ระบบคำนวณค่าคอมมิชชันแบบละเอียด</title>
     <script src="https://tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
 
-    <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md">
-        <h1 class="text-2xl font-bold text-center text-orange-600 mb-6">📊 คำนวณค่าคอมมิชชัน</h1>
+    <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md my-4">
+        <h1 class="text-2xl font-bold text-center text-orange-600 mb-6">📊 คำนวณค่าคอมแบบแจกแจงละเอียด</h1>
         
         <!-- เลือกประเภทงาน -->
         <div class="mb-4">
@@ -39,13 +39,22 @@
 
         <!-- ปุ่มคำนวณ -->
         <button onclick="calculateCommission()" class="w-full bg-orange-500 text-white font-bold p-3 rounded-xl hover:bg-orange-600 transition shadow-md">
-            คำนวณเงินรางวัล
+            คำนวณและแสดงวิธีคิด
         </button>
 
-        <!-- แสดงผลลัพธ์ -->
-        <div class="mt-6 p-4 bg-orange-50 rounded-xl border border-orange-200 text-center hidden" id="resultContainer">
-            <p class="text-gray-600 text-sm font-medium">ค่าคอมมิชชันรวมโดยประมาณ</p>
-            <p class="text-3xl font-extrabold text-orange-600 mt-1"><span id="totalEarnings">0</span> บาท</p>
+        <!-- แสดงผลลัพธ์และวิธีคิด -->
+        <div class="mt-6 hidden" id="resultContainer">
+            <div class="p-4 bg-orange-50 rounded-xl border border-orange-200 text-center mb-4">
+                <p class="text-gray-600 text-sm font-medium">💰 รวมเงินที่จะได้รับทั้งหมด</p>
+                <p class="text-3xl font-extrabold text-orange-600 mt-1"><span id="totalEarnings">0</span> บาท</p>
+            </div>
+            
+            <div class="p-4 bg-gray-50 rounded-xl border border-gray-200">
+                <h3 class="font-bold text-gray-700 text-sm mb-2">📄 รายละเอียดและวิธีคิดเงิน</h3>
+                <div id="breakdownList" class="space-y-2 text-sm text-gray-600">
+                    <!-- วิธีคิดทีละข้อจะโผล่ตรงนี้ -->
+                </div>
+            </div>
         </div>
     </div>
 
@@ -60,52 +69,61 @@
             }
         }
 
-        function calculateTier(parcels, rates) {
-            let total = 0;
-            let prev = 0;
-            for (let i = 0; i < rates.length; i++) {
-                let limit = rates[i][0];
-                let rate = rates[i][1];
-                if (parcels > prev) {
-                    let currentTierParcels = Math.min(parcels, limit) - prev;
-                    total += currentTierParcels * rate;
-                    prev = limit;
-                } else {
-                    break;
-                }
-            }
-            return total;
-        }
-
-        document.getElementById('empType').addEventListener('change', toggleSizeSelect);
-
         function calculateCommission() {
             const empType = document.getElementById('empType').value;
             const size = document.getElementById('packageSize').value;
             const parcels = parseInt(document.getElementById('parcels').value) || 0;
-            let total = 0;
+            
+            let rates = [];
 
+            // กำหนดโครงสร้างเรทราคา [เริ่มต้นชิ้นที่, สิ้นสุดชิ้นที่, ราคาต่อชิ้น] ตามหน้าตารางภาพที่ 1
             if (empType === 'z9_pickup') {
-                const rates = size === 'L' 
-                    ? [[44, 0], [99, 12], [169, 13], [209, 10.5], [Infinity, 9.5]]
-                    : [[44, 0], [99, 7], [169, 8], [209, 6.5], [Infinity, 5.5]];
-                total = calculateTier(parcels, rates);
+                rates = size === 'L' 
+                    ? [[0, 44, 0], [44, 99, 12], [99, 169, 13], [169, 209, 10.5], [209, Infinity, 9.5]]
+                    : [[0, 44, 0], [44, 99, 7], [99, 169, 8], [169, 209, 6.5], [209, Infinity, 5.5]];
             } else if (empType === 'z9_own_fleet') {
-                const rates = size === 'L'
-                    ? [[44, 0], [69, 7], [114, 8], [Infinity, 9]]
-                    : [[44, 0], [69, 4], [114, 5], [Infinity, 5]];
-                total = calculateTier(parcels, rates);
+                rates = size === 'L'
+                    ? [[0, 44, 0], [44, 69, 7], [69, 114, 8], [114, Infinity, 9]]
+                    : [[0, 44, 0], [44, 69, 4], [69, 114, 5], [114, Infinity, 5]];
             } else if (empType === 'z9_motorcycle') {
-                const rates = [[69, 0], [89, 6], [179, 7], [209, 8], [249, 6.5], [Infinity, 5.5]];
-                total = calculateTier(parcels, rates);
+                rates = [[0, 69, 0], [69, 89, 6], [89, 179, 7], [179, 209, 8], [209, 249, 6.5], [249, Infinity, 5.5]];
             } else if (empType === 'z6_shipper') {
-                const rates = size === 'L'
-                    ? [[34, 0], [74, 10], [114, 12], [Infinity, 13]]
-                    : [[34, 0], [74, 6], [114, 7], [Infinity, 8]];
-                total = calculateTier(parcels, rates);
+                rates = size === 'L'
+                    ? [[0, 34, 0], [34, 74, 10], [74, 114, 12], [114, Infinity, 13]]
+                    : [[0, 34, 0], [34, 74, 6], [74, 114, 7], [114, Infinity, 8]];
             }
 
+            let total = 0;
+            let breakdownHtml = '<p class="font-semibold text-gray-700">1. แยกพัสดุออกเป็นแต่ละขั้นตามลำดับ:</p><ul class="list-disc pl-5 space-y-1">';
+            let calculationHtml = '<p class="font-semibold text-gray-700 mt-3">2. คำนวณเงินของแต่ละขั้นแล้วนำมารวมกัน:</p><ul class="list-disc pl-5 space-y-1">';
+
+            for (let i = 0; i < rates.length; i++) {
+                let start = rates[i][0];
+                let end = rates[i][1];
+                let rate = rates[i][2];
+
+                if (parcels > start) {
+                    // หาจำนวนชิ้นที่ตกอยู่ในช่วงเทียร์นี้
+                    let currentTierParcels = Math.min(parcels, end) - start;
+                    let tierCost = currentTierParcels * rate;
+                    total += tierCost;
+
+                    // แสดงชื่อช่วงเช่น "ชิ้นที่ 0 - 44" หรือ "ชิ้นที่ 210 เป็นต้นไป"
+                    let rangeText = end === Infinity ? `ชิ้นที่ ${start + 1} เป็นต้นไป` : `ชิ้นที่ ${start === 0 ? 0 : start + 1} - ${end}`;
+                    
+                    breakdownHtml += `<li>ขั้นที่ ${i + 1} (${rangeText}): มีโควตาอยู่ในช่วงนี้ <span class="text-orange-600 font-medium">${currentTierParcels} ชิ้น</span> (${rate} บาท/ชิ้น)</li>`;
+                    calculationHtml += `<li>ขั้นที่ ${i + 1}: ${currentTierParcels} ชิ้น × ${rate} บาท = <span class="font-medium text-gray-800">${tierCost.toLocaleString('th-TH')} บาท</span></li>`;
+                } else {
+                    break;
+                }
+            }
+
+            breakdownHtml += `</ul><p class="text-xs text-gray-500 mt-1">(รวมจำนวนพัสดุทุกขั้น: ${parcels} ชิ้น ครบพอดี)</p>`;
+            calculationHtml += `</ul>`;
+
+            // อัปเดตข้อมูลขึ้นบนหน้าจอเว็บ
             document.getElementById('totalEarnings').innerText = total.toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+            document.getElementById('breakdownList').innerHTML = breakdownHtml + calculationHtml;
             document.getElementById('resultContainer').classList.remove('hidden');
         }
     </script>
