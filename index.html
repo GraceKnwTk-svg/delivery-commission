@@ -11,7 +11,7 @@
     <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-lg my-4">
         <h1 class="text-2xl font-bold text-center text-orange-600 mb-6">📊 โปรแกรมคำนวณค่ากล่องรายวัน SPX</h1>
         
-        <!-- ส่วนที่ 1: เลือกประเภทงาน -->
+        <!-- 1. เลือกประเภทงาน -->
         <div class="mb-4">
             <label class="block text-gray-700 text-sm font-bold mb-2">ประเภทพนักงาน / โซน</label>
             <select id="empType" class="w-full p-3 border rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-500" onchange="toggleInputs()">
@@ -22,7 +22,7 @@
             </select>
         </div>
 
-        <!-- ส่วนที่ 2: กรอกจำนวนพัสดุแยกไซส์ -->
+        <!-- 2. กรอกจำนวนพัสดุแยกไซส์ -->
         <div class="grid grid-cols-2 gap-4 mb-4">
             <div>
                 <label class="block text-gray-700 text-sm font-bold mb-2">จำนวนพัสดุเล็ก (Size S)</label>
@@ -34,12 +34,12 @@
             </div>
         </div>
 
-        <!-- ส่วนที่ 3: กรอกจำนวนพัสดุหักลบงานซ้ำ Same Address -->
+        <!-- 3. กรอกจำนวนพัสดุหักลบงานซ้ำ Same Address -->
         <div class="mb-6 p-4 bg-red-50 rounded-xl border border-red-100">
             <h3 class="font-bold text-red-700 text-sm mb-2">🏠 กรณีส่งพัสดุหลายชิ้นในที่อยู่เดียวกัน (Same Address)</h3>
-            <p class="text-xs text-red-500 mb-3">* หักชิ้นที่ 2 เป็นต้นไปในบ้านหลังนั้น เช่น ส่งบ้านเดียวกัน 3 ชิ้น ให้กรอกจำนวนหักลบ = 2 ชิ้น</p>
+            <p class="text-xs text-red-500 mb-3">* หักชิ้นที่ 2 เป็นต้นไป เช่น บ้านเดียวกันส่ง 3 ชิ้น ให้กรอกจำนวนหักลบ = 2 ชิ้น</p>
             <div>
-                <label class="block text-gray-600 text-xs font-bold mb-1">รวมจำนวนชิ้นที่จะโดนหักลบ (ทุกที่อยู่รวมกัน)</label>
+                <label class="block text-gray-600 text-xs font-bold mb-1">รวมจำนวนชิ้นที่จะโดนหักลบ (ทุกบ้านรวมกัน)</label>
                 <input type="number" id="sameAddressDeduct" min="0" value="0" placeholder="กรอกจำนวนชิ้นรวมที่จะโดนหัก เช่น 26" class="w-full p-3 border rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-red-400">
             </div>
         </div>
@@ -49,7 +49,7 @@
             คำนวณและแจกแจงวิธีคิด
         </button>
 
-        <!-- ส่วนที่ 4: ส่วนแสดงผลลัพธ์และวิธีคิดเงิน -->
+        <!-- 4. ส่วนแสดงผลลัพธ์และวิธีคิดเงิน -->
         <div class="mt-6 hidden" id="resultContainer">
             <div class="grid grid-cols-3 gap-2 text-center text-xs mb-4">
                 <div class="p-3 bg-blue-50 rounded-xl border border-blue-200">
@@ -69,17 +69,17 @@
             <div class="p-4 bg-gray-50 rounded-xl border border-gray-200">
                 <h3 class="font-bold text-gray-700 text-sm mb-3">📄 ตารางแจกแจงการนับพัสดุตามลำดับ (เริ่มจาก Size S ก่อน)</h3>
                 <div id="breakdownList" class="space-y-4 text-xs text-gray-600 overflow-x-auto">
-                    <!-- แสดงตารางคำนวณสะสม -->
+                    <!-- รายละเอียดแบบตารางจะโผล่ตรงนี้ -->
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ส่วนที่ 5: ระบบคำนวณ -->
     <script>
         function toggleInputs() {
             const empType = document.getElementById('empType').value;
             const sizeLContainer = document.getElementById('sizeLContainer');
+            // มอเตอร์ไซค์ไม่มีแยก Size L ให้ซ่อน
             if (empType === 'z9_motorcycle') {
                 sizeLContainer.classList.add('hidden');
                 document.getElementById('sizeLCount').value = 0;
@@ -93,9 +93,11 @@
             const sCount = parseInt(document.getElementById('sizeSCount').value) || 0;
             const lCount = parseInt(document.getElementById('sizeLCount').value) || 0;
             const deductCount = parseInt(document.getElementById('sameAddressDeduct').value) || 0;
+            const totalParcels = sCount + lCount;
 
+            // กำหนดโครงสร้างเทียร์เรทราคาตามภาพที่ 1 [ชิ้นเริ่ม, ชิ้นสิ้นสุด, เรท L, เรท S, ประเภทรถ]
             let tiers = [];
-            let vehicleType = '4W';
+            let vehicleType = '4W'; // เริ่มต้นเป็น 4W
 
             if (empType === 'z9_pickup') {
                 vehicleType = '4W';
@@ -127,16 +129,18 @@
             } else if (empType === 'z6_shipper') {
                 vehicleType = '2W';
                 tiers = [
-                    { start: 0, end: 34, rateL: 10, rateS: 6 },
-                    { start: 34, end: 74, rateL: 12, rateS: 7 },
-                    { start: 74, end: 114, rateL: 13, rateS: 8 },
+                    { start: 0, end: 34, rateL: 0, rateS: 0 },
+                    { start: 34, end: 74, rateL: 10, rateS: 6 },
+                    { start: 74, end: 114, rateL: 12, rateS: 7 },
                     { start: 114, end: Infinity, rateL: 13, rateS: 8 }
                 ];
             }
 
+            // คำนวณส่วนลด Same Address ตามเกณฑ์อัพเดทใหม่ล่าสุด ปี 2568 (รูปที่ 5)
             let deductRate = vehicleType === '4W' ? 2.5 : 1.5;
             let totalDeduction = deductCount * deductRate;
 
+            // ตรรกะสำคัญ: สร้างคิวการจ่ายเงินโดยเรียงจากพัสดุชิ้นเล็ก (Size S) ขึ้นมานับก่อนพัสดุชิ้นใหญ่ (Size L)
             let remainingS = sCount;
             let remainingL = lCount;
             let grossTotal = 0;
@@ -146,7 +150,10 @@
 
             for (let i = 0; i < tiers.length; i++) {
                 let tier = tiers[i];
+                let tierCapacity = tier.end - tier.start;
+                let processedInTier = 0;
 
+                // 1. จัดพัสดุ Size S ลงในเทียร์นี้ก่อน
                 if (remainingS > 0 && globalIndex < tier.end) {
                     let availableSpace = tier.end - globalIndex;
                     let sToProcess = Math.min(remainingS, availableSpace);
@@ -158,8 +165,10 @@
                     
                     remainingS -= sToProcess;
                     globalIndex += sToProcess;
+                    processedInTier += sToProcess;
                 }
 
+                // 2. จัดพัสดุ Size L ลงในเทียร์เดิมที่เหลืออยู่
                 if (remainingL > 0 && globalIndex < tier.end) {
                     let availableSpace = tier.end - globalIndex;
                     let lToProcess = Math.min(remainingL, availableSpace);
@@ -171,17 +180,3 @@
 
                     remainingL -= lToProcess;
                     globalIndex += lToProcess;
-                }
-                
-                if (remainingS === 0 && remainingL === 0) break;
-            }
-
-            let netTotal = Math.max(0, grossTotal - totalDeduction);
-
-            let finalTableHtml = `
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-gray-100 text-gray-700 font-bold border-b">
-                            <th class="p-2">ช่วงพัสดุสำเร็จ</th>
-                            <th class="p-2 text-center">ขนาด</th>
-                            <th class="p-2 text-center">เรท</th>
